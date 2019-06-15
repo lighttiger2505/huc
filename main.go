@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 
+	"github.com/ktr0731/go-fuzzyfinder"
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
@@ -16,7 +18,7 @@ func main() {
 
 	err := run()
 	if err != nil {
-		log.Println(err)
+		log.Println("Invalid request", err)
 	}
 }
 
@@ -39,77 +41,55 @@ func run() error {
 			DatabaseID githubv4.Int
 			URL        githubv4.URI
 
-			Issue struct {
-				Author       githubV4Actor
-				PublishedAt  githubv4.DateTime
-				LastEditedAt *githubv4.DateTime
-				Editor       *githubV4Actor
-				Body         githubv4.String
-				// ReactionGroups []struct {
-				// 	Content githubv4.ReactionContent
-				// 	Users   struct {
-				// 		Nodes []struct {
-				// 			Login githubv4.String
-				// 		}
-				//
-				// 		TotalCount githubv4.Int
-				// 	} `graphql:"users(first:10)"`
-				// 	ViewerHasReacted githubv4.Boolean
-				// }
-				ViewerCanUpdate githubv4.Boolean
-
-				// Comments struct {
-				// 	Nodes []struct {
-				// 		Body   githubv4.String
-				// 		Author struct {
-				// 			Login githubv4.String
-				// 		}
-				// 		Editor struct {
-				// 			Login githubv4.String
-				// 		}
-				// 	}
-				// 	PageInfo struct {
-				// 		EndCursor   githubv4.String
-				// 		HasNextPage githubv4.Boolean
-				// 	}
-				// } `graphql:"comments(first:$commentsFirst,after:$commentsAfter)"`
-			} `graphql:"issue(number:$issueNumber)"`
+			Issues struct {
+				Nodes []struct {
+					ID              githubv4.ID
+					Number          githubv4.Int
+					Author          githubV4Actor
+					PublishedAt     githubv4.DateTime
+					LastEditedAt    *githubv4.DateTime
+					Editor          *githubV4Actor
+					Title           githubv4.String
+					Body            githubv4.String
+					ViewerCanUpdate githubv4.Boolean
+				}
+			} `graphql:"issues(first:$issueFirst)"`
 		} `graphql:"repository(owner:$repositoryOwner,name:$repositoryName)"`
-		// Viewer struct {
-		// 	Login      githubv4.String
-		// 	CreatedAt  githubv4.DateTime
-		// 	ID         githubv4.ID
-		// 	DatabaseID githubv4.Int
-		// }
-		// RateLimit struct {
-		// 	Cost      githubv4.Int
-		// 	Limit     githubv4.Int
-		// 	Remaining githubv4.Int
-		// 	ResetAt   githubv4.DateTime
-		// }
 	}
+
 	variables := map[string]interface{}{
-		"repositoryOwner": githubv4.String("lighttiger2505"),
-		"repositoryName":  githubv4.String("lab"),
-		"issueNumber":     githubv4.Int(1),
-		// "commentsFirst":   githubv4.NewInt(1),
-		// "commentsAfter":   githubv4.NewString("Y3Vyc29yOjE5NTE4NDI1Ng=="),
+		"repositoryOwner": githubv4.String("golang"),
+		"repositoryName":  githubv4.String("go"),
+		"issueFirst":      githubv4.Int(100),
 	}
+
 	err := client.Query(context.Background(), &q, variables)
 	if err != nil {
 		return err
 	}
-	printJSON(q)
 
-	return nil
-}
-
-// printJSON prints v as JSON encoded with indent to stdout. It panics on any error.
-func printJSON(v interface{}) {
-	w := json.NewEncoder(os.Stdout)
-	w.SetIndent("", "\t")
-	err := w.Encode(v)
+	issues := q.Repository.Issues.Nodes
+	idx, err := fuzzyfinder.FindMulti(
+		issues,
+		func(i int) string {
+			return strconv.Itoa(int(issues[i].Number)) + " " + string(issues[i].Title)
+		},
+		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+			if i == -1 {
+				return ""
+			}
+			return fmt.Sprintf("Issue Number: %d (%s)\nTitle: %s\n\n%s",
+				issues[i].Number,
+				issues[i].ID,
+				issues[i].Title,
+				issues[i].Body,
+			)
+		}),
+	)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	fmt.Printf("selected: %v\n", idx)
+	return nil
 }
