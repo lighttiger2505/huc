@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"strconv"
 
 	"github.com/ktr0731/go-fuzzyfinder"
@@ -22,6 +24,34 @@ func main() {
 	}
 }
 
+// Query some details about a repository, an issue in it, and its comments.
+type GithubV4Actor struct {
+	Login     githubv4.String
+	AvatarURL githubv4.URI `graphql:"avatarUrl(size:72)"`
+	URL       githubv4.URI
+}
+
+type Issue struct {
+	ID              githubv4.ID
+	Number          githubv4.Int
+	Author          GithubV4Actor
+	PublishedAt     githubv4.DateTime
+	LastEditedAt    *githubv4.DateTime
+	Editor          *GithubV4Actor
+	Title           githubv4.String
+	Body            githubv4.String
+	ViewerCanUpdate githubv4.Boolean
+}
+
+func (i *Issue) ToString() string {
+	return fmt.Sprintf("Issue Number: %d (%s)\nTitle: %s\n\n%s",
+		i.Number,
+		i.ID,
+		i.Title,
+		i.Body,
+	)
+}
+
 func run() error {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: os.Getenv("GITHUB_GRAPHQL_TEST_TOKEN")},
@@ -29,30 +59,13 @@ func run() error {
 	httpClient := oauth2.NewClient(context.Background(), src)
 	client := githubv4.NewClient(httpClient)
 
-	// Query some details about a repository, an issue in it, and its comments.
-	type githubV4Actor struct {
-		Login     githubv4.String
-		AvatarURL githubv4.URI `graphql:"avatarUrl(size:72)"`
-		URL       githubv4.URI
-	}
-
 	var q struct {
 		Repository struct {
 			DatabaseID githubv4.Int
 			URL        githubv4.URI
 
 			Issues struct {
-				Nodes []struct {
-					ID              githubv4.ID
-					Number          githubv4.Int
-					Author          githubV4Actor
-					PublishedAt     githubv4.DateTime
-					LastEditedAt    *githubv4.DateTime
-					Editor          *githubV4Actor
-					Title           githubv4.String
-					Body            githubv4.String
-					ViewerCanUpdate githubv4.Boolean
-				}
+				Nodes []Issue
 			} `graphql:"issues(first:$issueFirst)"`
 		} `graphql:"repository(owner:$repositoryOwner,name:$repositoryName)"`
 	}
@@ -78,18 +91,60 @@ func run() error {
 			if i == -1 {
 				return ""
 			}
-			return fmt.Sprintf("Issue Number: %d (%s)\nTitle: %s\n\n%s",
-				issues[i].Number,
-				issues[i].ID,
-				issues[i].Title,
-				issues[i].Body,
-			)
+			return issues[i].ToString()
 		}),
 	)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("selected: %v\n", idx)
+	b := &Browser{}
+	url := fmt.Sprintf("https://github.com/golang/go/issues/%d", idx[0])
+	b.Open(url)
+
+	fmt.Printf("Open selected issue: %v\n", idx[0])
+
 	return nil
+}
+
+type URLOpener interface {
+	Open(url string) error
+}
+
+type Browser struct{}
+
+func (b *Browser) Open(url string) error {
+	browser := searchBrowserLauncher(runtime.GOOS)
+	c := exec.Command(browser, url)
+	if err := c.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func searchBrowserLauncher(goos string) (browser string) {
+	switch goos {
+	case "darwin":
+		browser = "open"
+	case "windows":
+		browser = "cmd /c start"
+	default:
+		candidates := []string{
+			"xdg-open",
+			"cygstart",
+			"x-www-browser",
+			"firefox",
+			"opera",
+			"mozilla",
+			"netscape",
+		}
+		for _, b := range candidates {
+			path, err := exec.LookPath(b)
+			if err == nil {
+				browser = path
+				break
+			}
+		}
+	}
+	return browser
 }
