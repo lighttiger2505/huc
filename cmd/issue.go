@@ -2,12 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 
 	"github.com/ktr0731/go-fuzzyfinder"
+	"github.com/lighttiger2505/huc/internal/cmdutil"
 	"github.com/lighttiger2505/huc/internal/config"
 	"github.com/lighttiger2505/huc/internal/git"
 	"github.com/lighttiger2505/huc/internal/github"
@@ -86,7 +85,7 @@ func findIssue(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	b := &Browser{}
+	b := &cmdutil.Browser{}
 	selectedIssueNumber := int(issues[int(idx)].Number)
 	url := strings.Join([]string{pInfo.SubpageUrl("issues"), strconv.Itoa(selectedIssueNumber)}, "/")
 
@@ -153,46 +152,4 @@ func toListProjectIssueOption(flags *pflag.FlagSet) (*github.ListProjectIssueOpt
 		Direction: directionOpt,
 		States:    statesOpt,
 	}, nil
-}
-
-type URLOpener interface {
-	Open(url string) error
-}
-
-type Browser struct{}
-
-func (b *Browser) Open(url string) error {
-	browser := searchBrowserLauncher(runtime.GOOS)
-	c := exec.Command(browser, url)
-	if err := c.Run(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func searchBrowserLauncher(goos string) (browser string) {
-	switch goos {
-	case "darwin":
-		browser = "open"
-	case "windows":
-		browser = "cmd /c start"
-	default:
-		candidates := []string{
-			"xdg-open",
-			"cygstart",
-			"x-www-browser",
-			"firefox",
-			"opera",
-			"mozilla",
-			"netscape",
-		}
-		for _, b := range candidates {
-			path, err := exec.LookPath(b)
-			if err == nil {
-				browser = path
-				break
-			}
-		}
-	}
-	return browser
 }
