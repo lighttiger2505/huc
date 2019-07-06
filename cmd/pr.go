@@ -17,7 +17,7 @@ import (
 )
 
 var prCmd = &cobra.Command{
-	Use:   "pr",
+	Use:   "pull-request",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -28,6 +28,7 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return findPullRequest(cmd, args)
 	},
+	Aliases: []string{"p", "pr"},
 }
 
 func init() {
