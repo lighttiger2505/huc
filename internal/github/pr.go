@@ -37,6 +37,35 @@ type ListProjectPullRequestOption struct {
 	Labels    []string
 }
 
+func ShowPullRequest(token, repositoryOwner, repositoryName string, number int) (*PullRequest, error) {
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
+	client := githubv4.NewClient(httpClient)
+
+	// Target object pullRequests https://developer.github.com/v4/object/repository/
+	var q struct {
+		Repository struct {
+			DatabaseID  githubv4.Int
+			URL         githubv4.URI
+			PullRequest PullRequest `graphql:"pullRequest(number:$pullRequestNumber)"`
+		} `graphql:"repository(owner:$repositoryOwner,name:$repositoryName)"`
+	}
+
+	variables := map[string]interface{}{
+		"repositoryOwner":   githubv4.String(repositoryOwner),
+		"repositoryName":    githubv4.String(repositoryName),
+		"pullRequestNumber": githubv4.Int(number),
+	}
+
+	if err := client.Query(context.Background(), &q, variables); err != nil {
+		return nil, err
+	}
+
+	return &q.Repository.PullRequest, nil
+}
+
 func ListPullRequest(token, repositoryOwner, repositoryName string, opt *ListProjectPullRequestOption) ([]PullRequest, error) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
