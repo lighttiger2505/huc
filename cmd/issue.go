@@ -28,6 +28,7 @@ to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return findIssue(cmd, args)
 	},
+	Aliases: []string{"i"},
 }
 
 func init() {
