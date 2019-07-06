@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var prCmd = &cobra.Command{
+var pullRequestCmd = &cobra.Command{
 	Use:   "pull-request",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
@@ -32,12 +32,12 @@ to quickly create a Cobra application.`,
 }
 
 func init() {
-	rootCmd.AddCommand(prCmd)
-	prCmd.Flags().IntP("num", "n", 50, "Number of lists to display.")
-	prCmd.Flags().StringP("direction", "", "DESC", "To sort order. Can be either ASC or DESC")
-	prCmd.Flags().StringP("sort", "", "CREATED_AT", "What to sort results by. Can be either COMMENTS, CREATED_AT or UPDATED_AT")
-	prCmd.Flags().StringP("states", "", "OPEN", "Indicates the state of the pull requests to display. OPEN or CLOSED, MERGED")
-	prCmd.Flags().StringP("labels", "", "", "A list of comma separated label names.")
+	rootCmd.AddCommand(pullRequestCmd)
+	pullRequestCmd.Flags().IntP("num", "n", 50, "Number of lists to display.")
+	pullRequestCmd.Flags().StringP("direction", "", "DESC", "To sort order. Can be either ASC or DESC")
+	pullRequestCmd.Flags().StringP("sort", "", "CREATED_AT", "What to sort results by. Can be either COMMENTS, CREATED_AT or UPDATED_AT")
+	pullRequestCmd.Flags().StringP("states", "", "OPEN", "Indicates the state of the pull requests to display. OPEN or CLOSED, MERGED")
+	pullRequestCmd.Flags().StringP("labels", "", "", "A list of comma separated label names.")
 }
 
 func findPullRequest(cmd *cobra.Command, args []string) error {
