@@ -44,6 +44,35 @@ type ListProjectIssueOption struct {
 	Labels    []string
 }
 
+func ShowIssue(token, repositoryOwner, repositoryName string, number int) (*Issue, error) {
+	src := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	httpClient := oauth2.NewClient(context.Background(), src)
+	client := githubv4.NewClient(httpClient)
+
+	var q struct {
+		Repository struct {
+			DatabaseID githubv4.Int
+			URL        githubv4.URI
+			Issue      Issue `graphql:"issue(number:$issueNumber)"`
+		} `graphql:"repository(owner:$repositoryOwner,name:$repositoryName)"`
+	}
+
+	variables := map[string]interface{}{
+		"repositoryOwner": githubv4.String(repositoryOwner),
+		"repositoryName":  githubv4.String(repositoryName),
+		"issueNumber":     githubv4.Int(number),
+	}
+
+	if err := client.Query(context.Background(), &q, variables); err != nil {
+		return nil, err
+	}
+
+	return &q.Repository.Issue, nil
+
+}
+
 func ListIssue(token, repositoryOwner, repositoryName string, opt *ListProjectIssueOption) ([]Issue, error) {
 	src := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
