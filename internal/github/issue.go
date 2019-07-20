@@ -15,6 +15,8 @@ type GithubV4Actor struct {
 	URL       githubv4.URI
 }
 
+// Issue model struct
+// https://developer.github.com/v4/object/issue/
 type Issue struct {
 	ID              githubv4.ID
 	Number          githubv4.Int
