@@ -21,6 +21,7 @@ require (
 	github.com/kr/pty v1.1.5 // indirect
 	github.com/ktr0731/go-fuzzyfinder v0.1.2
 	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/mattn/go-isatty v0.0.8
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/prometheus/common v0.6.0 // indirect
