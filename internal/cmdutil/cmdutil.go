@@ -1,8 +1,12 @@
 package cmdutil
 
 import (
+	"os"
 	"os/exec"
 	"runtime"
+	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 type URLOpener interface {
@@ -45,4 +49,24 @@ func searchBrowserLauncher(goos string) (browser string) {
 		}
 	}
 	return browser
+}
+
+func IsOverScreeenRow(contents string) bool {
+	row := strings.Count(contents, "\n")
+	_, height, _ := terminal.GetSize(0)
+	if row > height {
+		return true
+	}
+	return false
+}
+
+func ShowPager(contents string) error {
+	cmd := exec.Command("less", "-R")
+	cmd.Stdin = strings.NewReader(contents)
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
 }

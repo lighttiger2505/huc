@@ -110,7 +110,9 @@ func findPullRequest(cmd *cobra.Command, args []string) error {
 		}
 	case PullRequestActionShow:
 		pullRequest := pullRequests[int(indices[0])]
-		showPullRequest(&pullRequest)
+		if err := showPullRequest(&pullRequest); err != nil {
+			return err
+		}
 	}
 
 	return nil

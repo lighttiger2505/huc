@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lighttiger2505/huc/internal/cmdutil"
 	"github.com/lighttiger2505/huc/internal/config"
 	"github.com/lighttiger2505/huc/internal/git"
 	"github.com/lighttiger2505/huc/internal/github"
@@ -56,12 +57,22 @@ func showIssueMain(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	showIssue(issue)
+	if err := showIssue(issue); err != nil {
+		return nil
+	}
 	return nil
 }
 
-func showIssue(issue *github.Issue) {
-	fmt.Println(issue.ToString())
+func showIssue(issue *github.Issue) error {
+	contents := issue.ToString()
+	if !cmdutil.IsOverScreeenRow(contents) {
+		fmt.Println(issue.ToString())
+		return nil
+	}
+	if err := cmdutil.ShowPager(contents); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getIssueNumber(args []string) (int, error) {

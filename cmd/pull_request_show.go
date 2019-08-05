@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/lighttiger2505/huc/internal/cmdutil"
 	"github.com/lighttiger2505/huc/internal/config"
 	"github.com/lighttiger2505/huc/internal/git"
 	"github.com/lighttiger2505/huc/internal/github"
@@ -55,12 +56,23 @@ func showPullRequestMain(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	showPullRequest(pullRequest)
+
+	if err := showPullRequest(pullRequest); err != nil {
+		return err
+	}
 	return nil
 }
 
-func showPullRequest(pullRequest *github.PullRequest) {
-	fmt.Println(pullRequest.ToString())
+func showPullRequest(pullRequest *github.PullRequest) error {
+	contents := pullRequest.ToString()
+	if !cmdutil.IsOverScreeenRow(contents) {
+		fmt.Println(pullRequest.ToString())
+		return nil
+	}
+	if err := cmdutil.ShowPager(contents); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getPullRequestNumber(args []string) (int, error) {

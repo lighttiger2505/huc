@@ -110,7 +110,9 @@ func findIssue(cmd *cobra.Command, args []string) error {
 		}
 	case IssueActionShow:
 		issue := issues[int(indices[0])]
-		showIssue(&issue)
+		if err := showIssue(&issue); err != nil {
+			return nil
+		}
 	}
 
 	return nil
