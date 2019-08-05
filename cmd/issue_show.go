@@ -22,7 +22,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return showIssue(cmd, args)
+		return showIssueMain(cmd, args)
 	},
 }
 
@@ -30,7 +30,7 @@ func init() {
 	issueCmd.AddCommand(issueShowCmd)
 }
 
-func showIssue(cmd *cobra.Command, args []string) error {
+func showIssueMain(cmd *cobra.Command, args []string) error {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return fmt.Errorf("cannot load config, %s", err)
@@ -55,8 +55,13 @@ func showIssue(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(issue.ToString())
+
+	showIssue(issue)
 	return nil
+}
+
+func showIssue(issue *github.Issue) {
+	fmt.Println(issue.ToString())
 }
 
 func getIssueNumber(args []string) (int, error) {

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/ktr0731/go-fuzzyfinder"
-	"github.com/lighttiger2505/huc/internal/cmdutil"
 	"github.com/lighttiger2505/huc/internal/config"
 	"github.com/lighttiger2505/huc/internal/git"
 	"github.com/lighttiger2505/huc/internal/github"
@@ -31,6 +30,11 @@ to quickly create a Cobra application.`,
 	Aliases: []string{"i"},
 }
 
+const (
+	IssueActionBrowse = "browse"
+	IssueActionShow   = "show"
+)
+
 func init() {
 	rootCmd.AddCommand(issueCmd)
 	issueCmd.Flags().IntP("num", "n", 50, "Number of lists to display.")
@@ -38,6 +42,7 @@ func init() {
 	issueCmd.Flags().StringP("sort", "", "CREATED_AT", "What to sort results by. Can be either COMMENTS, CREATED_AT or UPDATED_AT")
 	issueCmd.Flags().StringP("states", "", "OPEN", "Indicates the state of the issues to display. OPEN or CLOSED")
 	issueCmd.Flags().StringP("labels", "", "", "A list of comma separated label names.")
+	issueCmd.Flags().StringP("action", "", "browse", "Action to the selected issue. browse, show")
 }
 
 func findIssue(cmd *cobra.Command, args []string) error {
@@ -53,6 +58,15 @@ func findIssue(cmd *cobra.Command, args []string) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	actionFlag, err := cmd.Flags().GetString("action")
+	if err != nil {
+		return err
+	}
+
+	if !isValidAction(actionFlag) {
+		return fmt.Errorf("Invalid action, '%s'", actionFlag)
 	}
 
 	opt, err := toListProjectIssueOption(cmd.Flags())
@@ -86,15 +100,25 @@ func findIssue(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	b := &cmdutil.Browser{}
-	selectedIssueNumber := int(issues[int(idx)].Number)
-	url := strings.Join([]string{pInfo.SubpageUrl("issues"), strconv.Itoa(selectedIssueNumber)}, "/")
+	issue := issues[int(idx)]
 
-	if err := b.Open(url); err != nil {
-		return err
+	switch actionFlag {
+	case IssueActionBrowse:
+		if err := browseIssue(pInfo, &issue); err != nil {
+			return err
+		}
+	case IssueActionShow:
+		showIssue(&issue)
 	}
 
 	return nil
+}
+
+func isValidAction(val string) bool {
+	if val == "" || val == IssueActionBrowse || val == IssueActionShow {
+		return true
+	}
+	return false
 }
 
 func toListProjectIssueOption(flags *pflag.FlagSet) (*github.ListProjectIssueOption, error) {
