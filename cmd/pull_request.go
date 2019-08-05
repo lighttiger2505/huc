@@ -80,7 +80,7 @@ func findPullRequest(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	idx, err := fuzzyfinder.Find(
+	indices, err := fuzzyfinder.FindMulti(
 		pullRequests,
 		func(i int) string {
 			return strconv.Itoa(int(pullRequests[i].Number)) + " " + string(pullRequests[i].Title)
@@ -100,13 +100,16 @@ func findPullRequest(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	pullRequest := pullRequests[int(idx)]
 	switch actionFlag {
 	case PullRequestActionBrowse:
-		if err := browsePullRequest(pInfo, &pullRequest); err != nil {
-			return err
+		for _, index := range indices {
+			pullRequest := pullRequests[int(index)]
+			if err := browsePullRequest(pInfo, &pullRequest); err != nil {
+				return err
+			}
 		}
 	case PullRequestActionShow:
+		pullRequest := pullRequests[int(indices[0])]
 		showPullRequest(&pullRequest)
 	}
 

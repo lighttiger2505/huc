@@ -80,7 +80,7 @@ func findIssue(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	idx, err := fuzzyfinder.Find(
+	indices, err := fuzzyfinder.FindMulti(
 		issues,
 		func(i int) string {
 			return strconv.Itoa(int(issues[i].Number)) + " " + string(issues[i].Title)
@@ -100,14 +100,16 @@ func findIssue(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	issue := issues[int(idx)]
-
 	switch actionFlag {
 	case IssueActionBrowse:
-		if err := browseIssue(pInfo, &issue); err != nil {
-			return err
+		for _, index := range indices {
+			issue := issues[int(index)]
+			if err := browseIssue(pInfo, &issue); err != nil {
+				return err
+			}
 		}
 	case IssueActionShow:
+		issue := issues[int(indices[0])]
 		showIssue(&issue)
 	}
 
