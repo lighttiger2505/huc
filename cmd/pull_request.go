@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/ktr0731/go-fuzzyfinder"
-	"github.com/lighttiger2505/huc/internal/cmdutil"
 	"github.com/lighttiger2505/huc/internal/config"
 	"github.com/lighttiger2505/huc/internal/git"
 	"github.com/lighttiger2505/huc/internal/github"
@@ -38,7 +37,13 @@ func init() {
 	pullRequestCmd.Flags().StringP("sort", "", "CREATED_AT", "What to sort results by. Can be either COMMENTS, CREATED_AT or UPDATED_AT")
 	pullRequestCmd.Flags().StringP("states", "", "OPEN", "Indicates the state of the pull requests to display. OPEN or CLOSED, MERGED")
 	pullRequestCmd.Flags().StringP("labels", "", "", "A list of comma separated label names.")
+	pullRequestCmd.Flags().StringP("action", "", "browse", "Action to the selected pull request. browse, show")
 }
+
+const (
+	PullRequestActionBrowse = "browse"
+	PullRequestActionShow   = "show"
+)
 
 func findPullRequest(cmd *cobra.Command, args []string) error {
 	cfg, err := config.GetConfig()
@@ -53,6 +58,15 @@ func findPullRequest(cmd *cobra.Command, args []string) error {
 	)
 	if err != nil {
 		return err
+	}
+
+	actionFlag, err := cmd.Flags().GetString("action")
+	if err != nil {
+		return err
+	}
+
+	if !isValidPullRequestAction(actionFlag) {
+		return fmt.Errorf("Invalid action, '%s'", actionFlag)
 	}
 
 	opt, err := toListProjectPullReqeustOption(cmd.Flags())
@@ -86,15 +100,24 @@ func findPullRequest(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	b := &cmdutil.Browser{}
-	selectedIssueNumber := int(pullRequests[int(idx)].Number)
-	url := strings.Join([]string{pInfo.SubpageUrl("pull"), strconv.Itoa(selectedIssueNumber)}, "/")
-
-	if err := b.Open(url); err != nil {
-		return err
+	pullRequest := pullRequests[int(idx)]
+	switch actionFlag {
+	case PullRequestActionBrowse:
+		if err := browsePullRequest(pInfo, &pullRequest); err != nil {
+			return err
+		}
+	case PullRequestActionShow:
+		showPullRequest(&pullRequest)
 	}
 
 	return nil
+}
+
+func isValidPullRequestAction(val string) bool {
+	if val == "" || val == PullRequestActionBrowse || val == PullRequestActionShow {
+		return true
+	}
+	return false
 }
 
 func toListProjectPullReqeustOption(flags *pflag.FlagSet) (*github.ListProjectPullRequestOption, error) {

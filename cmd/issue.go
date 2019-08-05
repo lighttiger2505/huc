@@ -65,7 +65,7 @@ func findIssue(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if !isValidAction(actionFlag) {
+	if !isValidIssueAction(actionFlag) {
 		return fmt.Errorf("Invalid action, '%s'", actionFlag)
 	}
 
@@ -114,7 +114,7 @@ func findIssue(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func isValidAction(val string) bool {
+func isValidIssueAction(val string) bool {
 	if val == "" || val == IssueActionBrowse || val == IssueActionShow {
 		return true
 	}
